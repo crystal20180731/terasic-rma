@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terasic RMA 维修报告查询</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 口令门 -->
+<div id="gate" class="gate">
+  <div class="gate-card">
+    <div class="gate-lock">🔒</div>
+    <h1>Terasic RMA 查询系统</h1>
+    <p class="gate-sub">请输入访问口令以查看售后维修数据</p>
+    <input id="pwInput" type="password" placeholder="访问口令" autocomplete="off">
+    <button id="unlockBtn">进入</button>
+    <div id="gateErr" class="gate-err"></div>
+    <p class="gate-hint">数据每日 09:05 自动更新 · 仅供内部销售查询使用</p>
+  </div>
+</div>
+
+<!-- 主应用 -->
+<div id="app" class="app hidden">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🔧</span>
+      <div>
+        <div class="title">Terasic RMA 维修报告查询</div>
+        <div class="subtitle">数据更新于 <span id="updatedAt">—</span> · 共 <span id="totalCount">0</span> 条记录</div>
+      </div>
+    </div>
+    <button id="lockBtn" class="lock-btn">🔒 退出</button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="query">🔍 维修查询</button>
+    <button class="tab" data-tab="mismatch">⚠️ 保固待核 <span id="mismatchBadge" class="badge-num">0</span></button>
+    <button class="tab" data-tab="customer">🏢 客户档案</button>
+  </nav>
+
+  <!-- 查询页 -->
+  <section id="tab-query" class="panel">
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input id="searchBox" type="text" placeholder="全文搜索：维修报告 / 备注 / 产品 / 序列号…（支持任意片段）">
+      <button id="searchClear" class="search-clear" title="清空">✕</button>
+    </div>
+
+    <div class="filters">
+      <div class="fld">
+        <label>起始年份</label>
+        <select id="fYearFrom"></select>
+      </div>
+      <div class="fld">
+        <label>结束年份</label>
+        <select id="fYearTo"></select>
+      </div>
+      <div class="fld">
+        <label>RMA 编号</label>
+        <input id="fRma" type="text" placeholder="如 26070003">
+      </div>
+      <div class="fld">
+        <label>客户名称（联系人）</label>
+        <input id="fContact" type="text" placeholder="联系人">
+      </div>
+      <div class="fld">
+        <label>客户单位（公司）</label>
+        <select id="fCompany"></select>
+      </div>
+      <div class="fld">
+        <label>产品名称</label>
+        <select id="fProduct"></select>
+      </div>
+      <div class="fld">
+        <label>产品序列号</label>
+        <input id="fSn" type="text" placeholder="序列号片段">
+      </div>
+      <button id="resetBtn" class="reset-btn">重置筛选</button>
+    </div>
+
+    <div class="result-bar">
+      <span id="resultCount">0 条结果</span>
+      <span class="sort-wrap">排序
+        <select id="sortBy">
+          <option value="time-desc">时间（新→旧）</option>
+          <option value="time-asc">时间（旧→新）</option>
+          <option value="company">客户单位</option>
+        </select>
+      </span>
+    </div>
+
+    <div id="cards" class="cards"></div>
+    <div id="emptyTip" class="empty-tip hidden">没有匹配的记录，试试放宽筛选条件。</div>
+  </section>
+
+  <!-- 保固待核页 -->
+  <section id="tab-mismatch" class="panel hidden">
+    <div class="note-box">
+      ⚠️ 以下 <b id="mMismatchCount">0</b> 条记录的「表单保固标注」与「按出货日期 90 天规则推算」结果不一致，建议核对后到 RMA 系统修正源头数据，网站次日自动同步。
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>RMA 编号</th><th>公司</th><th>产品</th><th>表单标注</th>
+          <th>出货日期</th><th>90天推算</th><th>report时间</th><th>标记</th>
+        </tr></thead>
+        <tbody id="mMismatchBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 客户档案页 -->
+  <section id="tab-customer" class="panel hidden">
+    <div class="search-wrap narrow">
+      <span class="search-ico">🏢</span>
+      <input id="custSearch" type="text" placeholder="输入客户单位（公司名）查询历史档案">
+    </div>
+    <div id="custResult"></div>
+  </section>
+</div>
+
+<!-- 详情弹窗 -->
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <button id="modalClose" class="modal-close">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
