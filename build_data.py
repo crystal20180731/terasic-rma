@@ -49,6 +49,16 @@ def clean_report(text):
         t = t[idx:]
     return t
 
+def clean_sales_note(text):
+    """销售备注：只保留『一、故障现象』之前的销售记录，截掉重复贴入的维修报告。"""
+    t = (text or '').strip()
+    idx = t.find('一、故障现象')
+    if idx > 0:
+        t = t[:idx]
+    elif idx == 0:
+        t = ''   # 整段就是维修报告，无销售前缀，隐藏区块
+    return t.strip()
+
 def get_password():
     pw = os.environ.get("RMA_PW")
     if pw:
@@ -89,7 +99,7 @@ def main():
             "stateCat": r["状态分类"].strip(),
             "closed": r["是否结案"].strip(),
             "report": clean_report(r["维修报告全文"]),
-            "noteSales": r["销售备注原文"].strip(),
+            "noteSales": clean_sales_note(r["销售备注原文"]),
             "noteTech": r["技术备注"].strip(),
             "fault": r["故障类型"].strip(),
             "shipDate": r["出货日期"].strip(),
