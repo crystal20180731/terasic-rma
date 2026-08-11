@@ -5,7 +5,7 @@
 口令来源：环境变量 RMA_PW，或本项目根目录 secret.txt（该文件不入库）。
 产物：site/data.enc
 """
-import os, csv, json, sys, datetime
+import os, csv, json, sys, datetime, re
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
@@ -50,14 +50,26 @@ def clean_report(text):
     return t
 
 def clean_sales_note(text):
-    """销售备注：只保留『一、故障现象』之前的销售记录，截掉重复贴入的维修报告。"""
+    """销售备注：截掉维修报告正文（『一、故障现象』起）及人工分隔标记（==/RMA-编号等），只留真正的销售信息。"""
     t = (text or '').strip()
+    if not t:
+        return ''
+    # 1) 最高优先级：截掉维修报告正文
     idx = t.find('一、故障现象')
-    if idx > 0:
+    if idx >= 0:
         t = t[:idx]
-    elif idx == 0:
-        t = ''   # 整段就是维修报告，无销售前缀，隐藏区块
-    return t.strip()
+    if not t.strip():
+        return ''
+    # 2) 逐行扫描，遇分隔标记则从该行起截断
+    keep = []
+    for line in t.split('\n'):
+        s = line.strip()
+        if re.match(r'^=+$', s):               # 纯等号分隔行 ==
+            break
+        if re.match(r'^RMA-\w', s):             # 单独成行的 RMA- 编号
+            break
+        keep.append(line)
+    return '\n'.join(keep).strip()
 
 def get_password():
     pw = os.environ.get("RMA_PW")
