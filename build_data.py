@@ -20,7 +20,7 @@ def parse_date(s):
     s = (s or '').strip()
     if not s:
         return None
-    for fmt in ('%Y.%m.%d', '%Y-%m-%d', '%Y/%m/%d'):
+    for fmt in ('%Y.%m.%d', '%Y-%m-%d', '%Y/%m/%d', '%Y%m%d'):
         try:
             return datetime.datetime.strptime(s, fmt).date()
         except ValueError:
@@ -100,7 +100,7 @@ def main():
             "product": r["产品明细"].strip(),
             "qty": r["数量"].strip(),
             "sn": r["序列号"].strip(),
-            "warranty": r["保固状态"].strip(),
+            "warranty": calc if calc else r["保固状态"].strip(),
             "fee": r["维修费用"].strip(),
             "currency": r["币别"].strip(),
             "reportTime": r["report时间"].strip(),
