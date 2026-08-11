@@ -42,12 +42,26 @@ def check_flag(warranty, calc):
     return '' if warranty == calc else f"不符：表单{warranty}/推算{calc}"
 
 def clean_report(text):
-    """去掉维修报告开头的销售记录前缀，从『一、故障现象』开始。"""
+    """去掉维修报告开头的销售记录前缀，保留板卡序号（如 1. 17010028-0831），从『一、故障现象』开始。"""
     t = (text or '').strip()
-    idx = t.find('一、故障现象')
-    if idx > 0:
-        t = t[idx:]
-    return t
+    lines = t.split('\n')
+    # 找到第一个包含『一、故障现象』的行
+    start_idx = -1
+    for i, line in enumerate(lines):
+        if '一、故障现象' in line:
+            start_idx = i
+            break
+    if start_idx <= 0:
+        return t
+    # 向前回溯，保留连续的板卡序号行（如 1. xxx / 2. xxx）
+    keep_idx = start_idx
+    for i in range(start_idx - 1, -1, -1):
+        s = lines[i].strip()
+        if re.match(r'^\d+\.\s+\S', s):
+            keep_idx = i
+        else:
+            break
+    return '\n'.join(lines[keep_idx:]).strip()
 
 def clean_sales_note(text):
     """销售备注：截掉维修报告正文（『一、故障现象』起）及人工分隔标记（==/RMA-编号等），只留真正的销售信息。"""
