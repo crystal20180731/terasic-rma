@@ -51,12 +51,28 @@ async function unlock() {
   const err = document.getElementById('gateErr');
   if (!pw) { err.textContent = '请输入口令'; return; }
   if (!crypto.subtle) { err.textContent = '当前环境不支持解密，请用 http(s) 访问'; return; }
-  err.textContent = '解密中…';
+  err.textContent = '准备下载…';
   try {
     const resp = await fetch('data.enc');
     if (!resp.ok) throw new Error('数据文件未找到');
-    const buf = await resp.arrayBuffer();
-    DATA = await decryptData(buf, pw);
+    const total = parseInt(resp.headers.get('Content-Length') || '0', 10);
+    const reader = resp.body.getReader();
+    const chunks = [];
+    let received = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.length;
+      const got = (received / 1024 / 1024).toFixed(1);
+      const full = total ? (total / 1024 / 1024).toFixed(1) : '?';
+      err.textContent = `正在下载数据 ${got} / ${full} MB…`;
+    }
+    const buf = new Uint8Array(received);
+    let offset = 0;
+    for (const chunk of chunks) { buf.set(chunk, offset); offset += chunk.length; }
+    err.textContent = '正在解密…';
+    DATA = await decryptData(buf.buffer, pw);
     RECORDS = DATA.records;
     document.getElementById('gate').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
@@ -67,7 +83,8 @@ async function unlock() {
     applyFilters();
     renderMismatch();
   } catch (e) {
-    err.textContent = '✗ 口令错误或无权限访问';
+    console.error(e);
+    err.textContent = '✗ ' + (e.message || '口令错误或解密失败');
   }
 }
 

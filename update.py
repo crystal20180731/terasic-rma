@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-每日更新：重新抓取 RMA -> 重建清洗数据 -> 重新加密 -> 生成 data.enc
+每日更新：重新抓取 RMA -> 抓取附件 -> 重建清洗数据 -> 重新加密 -> 生成 data.enc
 由 Windows 计划任务在每天 09:05 调用（run_update.bat）。
 仅抓取新增工单（已缓存的明细复用），速度快；如需全量刷新先删 details_cache_link/。
 """
@@ -15,9 +15,9 @@ logging.basicConfig(filename=LOG, level=logging.INFO,
                     format="%(asctime)s %(message)s", encoding="utf-8")
 log = logging.getLogger()
 
-def run(script):
+def run(script, cwd=ROOT):
     log.info("▶ 运行 %s", script)
-    p = subprocess.run([PY, os.path.join(ROOT, script)], cwd=ROOT,
+    p = subprocess.run([PY, os.path.join(cwd, script)], cwd=cwd,
                        capture_output=True, text=True)
     for line in p.stdout.strip().splitlines()[-8:]:
         log.info("   %s", line)
@@ -30,9 +30,10 @@ def main():
     os.chdir(ROOT)
     today = datetime.date.today().strftime("%Y-%m-%d")
     log.info("====== 每日更新开始 %s ======", today)
-    run("fetch_rma.py")        # 刷新列表 rma_data.csv
-    run("fetch_enrich_v3.py")  # 抓取新增明细到 details_cache_link
-    run("build_v4.py")         # 重建 rma_data_v4.csv
+    run("fetch_rma.py")           # 刷新列表 rma_data.csv
+    run("fetch_enrich_v3.py")     # 抓取新增明细到 details_cache_link
+    run("build_v4.py")            # 重建 rma_data_v4.csv
+    run("scrape_attachments.py")  # 抓取技术备注附件
     # 重新加密
     pw = open(os.path.join(ROOT, "secret.txt"), encoding="utf-8").read().strip()
     env = dict(os.environ, RMA_PW=pw, RMA_UPDATED=today)
