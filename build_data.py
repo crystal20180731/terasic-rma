@@ -5,7 +5,7 @@
 口令来源：环境变量 RMA_PW，或本项目根目录 secret.txt（该文件不入库）。
 产物：site/data.enc
 """
-import os, csv, json, sys
+import os, csv, json, sys, datetime
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
@@ -15,6 +15,39 @@ ROOT = os.path.dirname(HERE)
 SRC = os.path.join(ROOT, "rma_data_v4.csv")
 OUT = os.path.join(HERE, "data.enc")
 ITER = 200000
+
+def parse_date(s):
+    s = (s or '').strip()
+    if not s:
+        return None
+    for fmt in ('%Y.%m.%d', '%Y-%m-%d', '%Y/%m/%d'):
+        try:
+            return datetime.datetime.strptime(s, fmt).date()
+        except ValueError:
+            pass
+    return None
+
+def calc_warranty(ship, rma):
+    """保固判定：报修日期 − 出货日期 > 90 天 为保外，否则保内。"""
+    d_s = parse_date(ship)
+    d_r = parse_date(rma)
+    if not d_s or not d_r:
+        return ''
+    return '保外' if (d_r - d_s).days > 90 else '保内'
+
+def check_flag(warranty, calc):
+    """表单标注与 90 天推算不一致时标记。"""
+    if not warranty or not calc:
+        return ''
+    return '' if warranty == calc else f"不符：表单{warranty}/推算{calc}"
+
+def clean_report(text):
+    """去掉维修报告开头的销售记录前缀，从『一、故障现象』开始。"""
+    t = (text or '').strip()
+    idx = t.find('一、故障现象')
+    if idx > 0:
+        t = t[idx:]
+    return t
 
 def get_password():
     pw = os.environ.get("RMA_PW")
@@ -31,6 +64,7 @@ def main():
     rows = list(csv.DictReader(open(SRC, encoding="utf-8-sig")))
     records = []
     for r in rows:
+        calc = calc_warranty(r["出货日期"], r["report时间"])
         records.append({
             "rma": r["RMA完整号"].strip(),
             "rmaNo": r["RMA编号"].strip(),
@@ -54,14 +88,14 @@ def main():
             "stateRaw": r["状态原始"].strip(),
             "stateCat": r["状态分类"].strip(),
             "closed": r["是否结案"].strip(),
-            "report": r["维修报告全文"].strip(),
+            "report": clean_report(r["维修报告全文"]),
             "noteSales": r["销售备注原文"].strip(),
             "noteTech": r["技术备注"].strip(),
             "fault": r["故障类型"].strip(),
             "shipDate": r["出货日期"].strip(),
-            "calcWarranty": r["推算保固"].strip(),
+            "calcWarranty": calc,
             "warrantyBasis": r["保固判定依据"].strip(),
-            "checkFlag": r["校验标记"].strip(),
+            "checkFlag": check_flag(r["保固状态"], calc),
         })
 
     # 去重下拉选项

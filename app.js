@@ -25,6 +25,12 @@ async function decryptData(buf, password) {
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 }
+function formatReport(s) {
+  let t = esc(s);
+  // 在章节点（一、二、…）前补换行保证分段，已有换行一并转 <br>
+  t = t.replace(/([一二三四五六七八九十]、)/g, '\n$1');
+  return t.replace(/\n/g, '<br>').replace(/^<br>/, '');
+}
 function warrantyClass(w) {
   if (w === '保内') return 'chip-green';
   if (w === '保外') return 'chip-red';
@@ -197,7 +203,7 @@ function openDetail(r) {
       <div><b>出货日期</b>${esc(r.shipDate || '—')}</div>
       <div><b>故障类型</b>${esc(r.fault || '—')}</div>
     </div>
-    ${r.report ? `<div class="m-sec"><h4>维修报告全文</h4><div class="body">${esc(r.report)}</div></div>` : ''}
+    ${r.report ? `<div class="m-sec"><h4>维修报告全文</h4><div class="body">${formatReport(r.report)}</div></div>` : ''}
     ${r.noteSales ? `<div class="m-sec"><h4>销售备注</h4><div class="body">${esc(r.noteSales)}</div></div>` : ''}
     ${r.noteTech ? `<div class="m-sec"><h4>技术备注</h4><div class="body">${esc(r.noteTech)}</div></div>` : ''}
   `;
