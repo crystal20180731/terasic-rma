@@ -109,6 +109,10 @@ function buildFilters() {
 }
 
 /* ---------- 查询 + 筛选 ---------- */
+function isClosed(r) {
+  return r.stateCat === '已结案' || r.closed === 'Y' || r.closed === '已结案';
+}
+
 function getFilters() {
   const yf = parseInt(document.getElementById('fYearFrom').value) || 0;
   const yt = parseInt(document.getElementById('fYearTo').value) || 9999;
@@ -118,6 +122,7 @@ function getFilters() {
     contact: document.getElementById('fContact').value.trim().toLowerCase(),
     company: document.getElementById('fCompany').value,
     product: document.getElementById('fProduct').value,
+    closed: document.getElementById('fClosed').value,
     sn: document.getElementById('fSn').value.trim().toLowerCase(),
     q: document.getElementById('searchBox').value.trim().toLowerCase(),
   };
@@ -132,6 +137,8 @@ function applyFilters() {
     if (f.contact && !r.contact.toLowerCase().includes(f.contact)) return false;
     if (f.company && r.company !== f.company) return false;
     if (f.product && r.product !== f.product) return false;
+    if (f.closed === 'closed' && !isClosed(r)) return false;
+    if (f.closed === 'open' && isClosed(r)) return false;
     if (f.sn && !r.sn.toLowerCase().includes(f.sn)) return false;
     if (f.q && !searchable(r).includes(f.q)) return false;
     return true;
@@ -311,13 +318,14 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('modalClose').onclick = closeModal;
   document.getElementById('modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
   document.querySelectorAll('.tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
-  ['searchBox', 'fRma', 'fContact', 'fSn', 'fYearFrom', 'fYearTo', 'fCompany', 'fProduct'].forEach(id => {
+  ['searchBox', 'fRma', 'fContact', 'fSn', 'fYearFrom', 'fYearTo', 'fCompany', 'fProduct', 'fClosed'].forEach(id => {
     document.getElementById(id).addEventListener('input', applyFilters);
   });
   document.getElementById('fYearFrom').addEventListener('change', applyFilters);
   document.getElementById('fYearTo').addEventListener('change', applyFilters);
   document.getElementById('fCompany').addEventListener('change', applyFilters);
   document.getElementById('fProduct').addEventListener('change', applyFilters);
+  document.getElementById('fClosed').addEventListener('change', applyFilters);
   document.getElementById('sortBy').addEventListener('change', applyFilters);
   document.getElementById('searchClear').onclick = () => { document.getElementById('searchBox').value = ''; applyFilters(); };
   document.getElementById('resetBtn').onclick = () => {
@@ -326,6 +334,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('fYearTo').value = (DATA.meta.years || []).slice(-1)[0] || '';
     document.getElementById('fCompany').value = '';
     document.getElementById('fProduct').value = '';
+    document.getElementById('fClosed').value = '';
     applyFilters();
   };
   let ct;
