@@ -5,7 +5,7 @@
 口令来源：环境变量 RMA_PW，或本项目根目录 secret.txt（该文件不入库）。
 产物：site/data.enc
 """
-import os, csv, json, sys, datetime, re
+import os, csv, json, sys, datetime, re, base64
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
@@ -14,7 +14,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SRC = os.path.join(ROOT, "rma_data_v4.csv")
 OUT = os.path.join(HERE, "data.enc")
+ATT_DIR = os.path.join(HERE, "attachments")
+INDEX_FILE = os.path.join(HERE, "attachments_index.json")
 ITER = 200000
+MAX_ATT_BYTES = 10 * 1024 * 1024   # 单文件超过 10MB 跳过，避免 data.enc 过大
 
 def parse_date(s):
     s = (s or '').strip()
@@ -85,6 +88,41 @@ def clean_sales_note(text):
         keep.append(line)
     return '\n'.join(keep).strip()
 
+def load_att_index():
+    """读取抓取脚本产出的 attachments_index.json：RMA编号 -> [{name,type,mime}]。"""
+    if os.path.exists(INDEX_FILE):
+        try:
+            return json.load(open(INDEX_FILE, encoding="utf-8"))
+        except Exception as e:
+            print(f"  ⚠ 读取 attachments_index.json 失败：{e}")
+    return {}
+
+def build_attachments(att_index, rmaNo, rma):
+    """把某条 RMA 的附件读成 base64 内嵌，供前端直接展示。"""
+    key = (rmaNo or '').strip() or (rma or '').strip()
+    recs = att_index.get(key) or []
+    out = []
+    for a in recs:
+        path = os.path.join(ATT_DIR, key, a["name"])
+        if not os.path.exists(path):
+            continue
+        try:
+            with open(path, "rb") as f:
+                raw = f.read()
+        except Exception as e:
+            print(f"  ⚠ 读取附件失败 {path}：{e}")
+            continue
+        if len(raw) > MAX_ATT_BYTES:
+            print(f"  ⚠ 跳过超大附件 {a['name']}（{len(raw)//1024//1024} MB）")
+            continue
+        out.append({
+            "name": a["name"],
+            "type": a.get("type", "file"),
+            "mime": a.get("mime", "application/octet-stream"),
+            "b64": base64.b64encode(raw).decode("ascii"),
+        })
+    return out
+
 def get_password():
     pw = os.environ.get("RMA_PW")
     if pw:
@@ -97,6 +135,9 @@ def get_password():
 
 def main():
     pw = get_password()
+    att_index = load_att_index()
+    if att_index:
+        print(f"   已加载附件索引：{len(att_index)} 条 RMA 含附件")
     rows = list(csv.DictReader(open(SRC, encoding="utf-8-sig")))
     records = []
     for r in rows:
@@ -132,6 +173,7 @@ def main():
             "calcWarranty": calc,
             "warrantyBasis": r["保固判定依据"].strip(),
             "checkFlag": check_flag(r["保固状态"], calc),
+            "attachments": build_attachments(att_index, r["RMA编号"].strip(), r["RMA完整号"].strip()),
         })
 
     # 去重下拉选项
@@ -167,9 +209,10 @@ def main():
     out = salt + nonce + ct
     with open(OUT, "wb") as f:
         f.write(out)
+    att_total = sum(len(rec.get("attachments", [])) for rec in records)
     print(f"✓ 已加密写入 {OUT}")
     print(f"  记录数: {len(records)} | 保固待核: {len(mismatch)} | 年份: {meta['years'][0]}~{meta['years'][-1]}")
-    print(f"  文件大小: {len(out)//1024} KB")
+    print(f"  内嵌附件: {att_total} 个 | 文件大小: {len(out)//1024} KB")
 
 if __name__ == "__main__":
     main()

@@ -185,6 +185,24 @@ function renderCards(list) {
   box.appendChild(frag);
 }
 
+/* ---------- 附件（技术备注上传的图片/文档） ---------- */
+function renderAttachments(atts) {
+  if (!atts || !atts.length) return '';
+  let imgs = '', files = '';
+  atts.forEach(a => {
+    const nm = esc(a.name);
+    if (a.type === 'image') {
+      imgs += `<div class="att-item"><img class="att-img" src="data:${a.mime};base64,${a.b64}" alt="${nm}" loading="lazy"><div class="att-name">${nm}</div></div>`;
+    } else {
+      files += `<li><a class="att-link" href="data:${a.mime};base64,${a.b64}" download="${nm}">${nm}</a></li>`;
+    }
+  });
+  return `<div class="m-sec"><h4>附件（技术备注上传）</h4>`
+    + (imgs ? `<div class="att-grid">${imgs}</div>` : '')
+    + (files ? `<ul class="att-list">${files}</ul>` : '')
+    + `</div>`;
+}
+
 /* ---------- 详情弹窗 ---------- */
 function openDetail(r) {
   const warn = r.checkFlag.startsWith('不符')
@@ -213,6 +231,7 @@ function openDetail(r) {
     ${r.report ? `<div class="m-sec"><h4>维修报告全文</h4><div class="body">${formatReport(r.report)}</div></div>` : ''}
     ${r.noteSales ? `<div class="m-sec"><h4>销售备注</h4><div class="body">${esc(r.noteSales)}</div></div>` : ''}
     ${r.noteTech ? `<div class="m-sec"><h4>技术备注</h4><div class="body">${esc(r.noteTech)}</div></div>` : ''}
+    ${renderAttachments(r.attachments)}
   `;
   document.getElementById('modalBody').innerHTML = body;
   document.getElementById('modal').classList.remove('hidden');

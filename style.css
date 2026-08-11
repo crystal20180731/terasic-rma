@@ -143,3 +143,13 @@ button{font-family:inherit;cursor:pointer}
   .cards{grid-template-columns:1fr}
   .topbar .subtitle{font-size:11px}
 }
+
+/* 附件（技术备注上传） */
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:4px}
+.att-item{background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:8px;overflow:hidden}
+.att-img{width:100%;height:auto;display:block;border-radius:6px;cursor:zoom-in}
+.att-name{font-size:11px;color:var(--muted);margin-top:6px;word-break:break-all;line-height:1.4}
+.att-list{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-direction:column;gap:6px}
+.att-link{display:inline-block;color:var(--brand);font-size:13px;text-decoration:none;
+  background:#eef3ff;border:1px solid #dbe5ff;border-radius:8px;padding:7px 12px}
+.att-link:hover{background:#e2ebff}

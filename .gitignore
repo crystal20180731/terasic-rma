@@ -3,3 +3,10 @@ node_modules/
 __pycache__/
 secret.txt
 *.csv
+# 抓取脚本与产物（含凭据/内部数据，禁止入库）
+scrape_probe.py
+scrape_attachments.py
+probe_*.html
+attachments/
+attachments_index.json
+terasic_secret*
