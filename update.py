@@ -10,8 +10,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 PY = sys.executable
 
+# 强制 stdout/stderr 为 UTF-8，避免计划任务（GBK 环境）下中文日志编码崩溃
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 # 日志输出到 stdout，由 run_update.bat 负责重定向到文件。
-# 避免 Python 自身打开 update.log 时因文件被锁而崩溃。
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format="%(asctime)s %(message)s", encoding="utf-8")
 log = logging.getLogger()
@@ -19,8 +23,9 @@ log = logging.getLogger()
 def run(script, cwd=ROOT):
     log.info("[RUN] %s", script)
     p = subprocess.run([PY, os.path.join(cwd, script)], cwd=cwd,
-                       capture_output=True, text=True)
-    for line in p.stdout.strip().splitlines()[-8:]:
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    out = (p.stdout or "").strip()
+    for line in out.splitlines()[-8:]:
         log.info("   %s", line)
     if p.returncode != 0:
         log.error("[FAIL] %s:\n%s", script, p.stderr[-500:])
