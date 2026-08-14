@@ -98,7 +98,7 @@ def load_att_index():
     return {}
 
 def build_attachments(att_index, rmaNo, rma):
-    """把某条 RMA 的附件读成 base64 内嵌，供前端直接展示。"""
+    """把某条 RMA 的附件转成静态文件引用，供前端按需加载。"""
     key = (rmaNo or '').strip() or (rma or '').strip()
     recs = att_index.get(key) or []
     out = []
@@ -107,19 +107,19 @@ def build_attachments(att_index, rmaNo, rma):
         if not os.path.exists(path):
             continue
         try:
-            with open(path, "rb") as f:
-                raw = f.read()
+            size = os.path.getsize(path)
         except Exception as e:
             print(f"  ⚠ 读取附件失败 {path}：{e}")
             continue
-        if len(raw) > MAX_ATT_BYTES:
-            print(f"  ⚠ 跳过超大附件 {a['name']}（{len(raw)//1024//1024} MB）")
+        if size > MAX_ATT_BYTES:
+            print(f"  ⚠ 跳过超大附件 {a['name']}（{size//1024//1024} MB）")
             continue
         out.append({
             "name": a["name"],
             "type": a.get("type", "file"),
             "mime": a.get("mime", "application/octet-stream"),
-            "b64": base64.b64encode(raw).decode("ascii"),
+            "size": size,
+            "url": f"attachments/{key}/{a['name']}",
         })
     return out
 
@@ -212,7 +212,7 @@ def main():
     att_total = sum(len(rec.get("attachments", [])) for rec in records)
     print(f"✓ 已加密写入 {OUT}")
     print(f"  记录数: {len(records)} | 保固待核: {len(mismatch)} | 年份: {meta['years'][0]}~{meta['years'][-1]}")
-    print(f"  内嵌附件: {att_total} 个 | 文件大小: {len(out)//1024} KB")
+    print(f"  附件引用: {att_total} 个 | data.enc 大小: {len(out)//1024} KB")
 
 if __name__ == "__main__":
     main()

@@ -7,6 +7,6 @@ secret.txt
 scrape_probe.py
 scrape_attachments.py
 probe_*.html
-attachments/
+# 附件索引运行时生成，不提交；但 attachments/ 下的实际文件需要提交到 pages.dev 供按需加载
 attachments_index.json
 terasic_secret*

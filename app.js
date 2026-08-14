@@ -208,10 +208,11 @@ function renderAttachments(atts) {
   let imgs = '', files = '';
   atts.forEach(a => {
     const nm = esc(a.name);
+    const url = esc(a.url);
     if (a.type === 'image') {
-      imgs += `<div class="att-item"><img class="att-img" src="data:${a.mime};base64,${a.b64}" alt="${nm}" loading="lazy"><div class="att-name">${nm}</div></div>`;
+      imgs += `<div class="att-item"><img class="att-img" src="${url}" alt="${nm}" loading="lazy"><div class="att-name">${nm}</div></div>`;
     } else {
-      files += `<li><a class="att-link" href="data:${a.mime};base64,${a.b64}" download="${nm}">${nm}</a></li>`;
+      files += `<li><a class="att-link" href="${url}" download="${nm}">${nm}</a></li>`;
     }
   });
   return `<div class="m-sec"><h4>附件（技术备注上传）</h4>`
