@@ -3,10 +3,10 @@ node_modules/
 __pycache__/
 secret.txt
 *.csv
-# 抓取脚本与产物（含凭据/内部数据，禁止入库）
+# 抓取脚本与产物（含凭据/内部数据，禁止冲洗库）
 scrape_probe.py
-scrape_attachments.py
 probe_*.html
 # 附件索引运行时生成，不提交；但 attachments/ 下的实际文件需要提交到 pages.dev 供按需加载
 attachments_index.json
 terasic_secret*
+update.log
