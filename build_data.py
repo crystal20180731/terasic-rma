@@ -192,8 +192,12 @@ def main():
     }
     mismatch = [rec for rec in records if rec["checkFlag"].startswith("不符")]
 
+    updated_at = os.environ.get("RMA_UPDATED", "")
+    if not updated_at:
+        updated_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+
     payload = {
-        "updated": os.environ.get("RMA_UPDATED", ""),
+        "updated": updated_at,
         "count": len(records),
         "mismatchCount": len(mismatch),
         "records": records,
